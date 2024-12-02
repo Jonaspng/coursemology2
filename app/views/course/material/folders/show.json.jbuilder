@@ -32,6 +32,7 @@ end
 json.materials @folder.materials.includes(:updater) do |material|
   json.id material.id
   json.name material.name
+  json.workflowState material.workflow_state
   json.description format_ckeditor_rich_text(material.description)
   json.materialUrl url_to_material(current_course, @folder, material)
   json.updatedAt material.attachment.updated_at
@@ -52,7 +53,7 @@ end
 
 json.breadcrumbs @folder.ancestors.reverse << @folder do |folder|
   json.id folder.id
-  json.name folder.name == 'Root' ? @settings.title || t('course.material.sidebar_title') : folder.name
+  json.name (folder.name == 'Root') ? @settings.title || t('course.material.sidebar_title') : folder.name
 end
 
 json.advanceStartAt current_course.advance_start_at_duration
