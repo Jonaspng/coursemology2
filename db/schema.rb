@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_10_19_070018) do
+ActiveRecord::Schema[7.2].define(version: 2024_11_08_141144) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "uuid-ossp"
@@ -841,34 +841,40 @@ ActiveRecord::Schema[7.2].define(version: 2024_10_19_070018) do
     t.index ["updater_id"], name: "fk__course_material_folders_updater_id"
   end
 
+  create_table "course_material_text_chunkings", id: :serial, force: :cascade do |t|
+    t.integer "material_id", null: false
+    t.uuid "job_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_id"], name: "index_course_material_text_chunkings_on_job_id", unique: true
+    t.index ["material_id"], name: "index_course_material_text_chunkings_on_material_id", unique: true
+  end
+
   create_table "course_material_text_chunks", id: :serial, force: :cascade do |t|
     t.bigint "course_material_id", null: false
     t.text "content", null: false
     t.vector "embedding", limit: 1536, null: false
-    t.bigint "creator_id"
-    t.bigint "updater_id"
     t.bigint "course_id"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.integer "chunker_id"
     t.index ["course_id"], name: "index_course_material_text_chunks_on_course_id"
+    t.index ["course_material_id", "content"], name: "index_text_chunks_on_text_chunk_id_and_content", unique: true
     t.index ["course_material_id"], name: "index_course_material_text_chunks_on_course_material_id"
-    t.index ["creator_id"], name: "index_course_material_text_chunks_on_creator_id"
     t.index ["embedding"], name: "index_on_course_material_text_chunk_embedding", opclass: :vector_cosine_ops, using: :hnsw
-    t.index ["updater_id"], name: "index_course_material_text_chunks_on_updater_id"
   end
 
   create_table "course_materials", id: :serial, force: :cascade do |t|
     t.integer "folder_id", null: false
     t.string "name", limit: 255, null: false
     t.text "description"
-    t.integer "creator_id", null: false
-    t.integer "updater_id", null: false
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "workflow_state", limit: 255, default: "not_chunked", null: false
+    t.integer "updater_id"
+    t.integer "creator_id"
     t.index "folder_id, lower((name)::text)", name: "index_course_materials_on_folder_id_and_name", unique: true
-    t.index ["creator_id"], name: "fk__course_materials_creator_id"
     t.index ["folder_id"], name: "fk__course_materials_folder_id"
-    t.index ["updater_id"], name: "fk__course_materials_updater_id"
   end
 
   create_table "course_monitoring_heartbeats", force: :cascade do |t|
@@ -1613,12 +1619,11 @@ ActiveRecord::Schema[7.2].define(version: 2024_10_19_070018) do
   add_foreign_key "course_material_folders", "courses", name: "fk_course_material_folders_course_id"
   add_foreign_key "course_material_folders", "users", column: "creator_id", name: "fk_course_material_folders_creator_id"
   add_foreign_key "course_material_folders", "users", column: "updater_id", name: "fk_course_material_folders_updater_id"
+  add_foreign_key "course_material_text_chunkings", "course_materials", column: "material_id", name: "fk_course_material_text_chunkings_answer_id"
+  add_foreign_key "course_material_text_chunkings", "jobs", name: "fk_course_material_text_chunkings_job_id", on_delete: :nullify
   add_foreign_key "course_material_text_chunks", "courses"
-  add_foreign_key "course_material_text_chunks", "users", column: "creator_id"
-  add_foreign_key "course_material_text_chunks", "users", column: "updater_id"
+  add_foreign_key "course_material_text_chunks", "users", column: "chunker_id", name: "fk_course_materials_chunker_id"
   add_foreign_key "course_materials", "course_material_folders", column: "folder_id", name: "fk_course_materials_folder_id"
-  add_foreign_key "course_materials", "users", column: "creator_id", name: "fk_course_materials_creator_id"
-  add_foreign_key "course_materials", "users", column: "updater_id", name: "fk_course_materials_updater_id"
   add_foreign_key "course_monitoring_heartbeats", "course_monitoring_sessions", column: "session_id"
   add_foreign_key "course_monitoring_sessions", "course_monitoring_monitors", column: "monitor_id"
   add_foreign_key "course_monitoring_sessions", "users", column: "creator_id"
