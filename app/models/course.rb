@@ -81,6 +81,7 @@ class Course < ApplicationRecord
   has_many :setting_emails, class_name: 'Course::Settings::Email', inverse_of: :course, dependent: :destroy
   has_one :duplication_traceable, class_name: 'DuplicationTraceable::Course',
                                   inverse_of: :course, dependent: :destroy
+  has_many :text_chunks, class_name: 'Course::Materials::TextChunk', through: :course_materials
 
   accepts_nested_attributes_for :invitations, :assessment_categories, :video_tabs
 
