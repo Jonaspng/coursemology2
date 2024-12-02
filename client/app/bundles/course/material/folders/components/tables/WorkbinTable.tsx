@@ -126,6 +126,18 @@ const WorkbinTable: FC<Props> = (props) => {
     );
   };
 
+  const columnHeaderWithoutSort = (columnName: string): JSX.Element => {
+    return (
+      <Button
+        disableFocusRipple
+        disableRipple
+        style={{ padding: 0, alignItems: 'center', justifyContent: 'start' }}
+      >
+        {columnName}
+      </Button>
+    );
+  };
+
   return (
     <TableContainer dense variant="bare">
       <TableHead>
@@ -135,7 +147,7 @@ const WorkbinTable: FC<Props> = (props) => {
           {!isCurrentCourseStudent && (
             <TableCell>{columnHeaderWithSort('Start At')}</TableCell>
           )}
-          <TableCell />
+          <TableCell>{columnHeaderWithoutSort('Knowledge Base')}</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>

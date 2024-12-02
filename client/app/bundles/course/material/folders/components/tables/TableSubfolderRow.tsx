@@ -115,6 +115,11 @@ const TableSubfolderRow: FC<Props> = (props) => {
           </Stack>
         </TableCell>
       )}
+      <TableCell style={{ width: '60px' }}>
+        <Stack alignItems="center" direction="column" spacing={0.5}>
+          -
+        </Stack>
+      </TableCell>
       <TableCell
         style={{
           width: '60px',
@@ -134,6 +139,7 @@ const TableSubfolderRow: FC<Props> = (props) => {
           isConcrete={isConcrete}
           itemId={subfolder.id}
           itemName={subfolder.name}
+          state={null}
           type="subfolder"
         />
       </TableCell>

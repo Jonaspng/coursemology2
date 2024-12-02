@@ -8,6 +8,7 @@ import Link from 'lib/components/core/Link';
 import { getCourseId } from 'lib/helpers/url-helpers';
 import { formatFullDateTime } from 'lib/moment';
 
+import KnowledgeBaseSwitch from '../buttons/KnowledgeBaseSwitch';
 import WorkbinTableButtons from '../buttons/WorkbinTableButtons';
 
 interface Props {
@@ -81,6 +82,19 @@ const TableMaterialRow: FC<Props> = (props) => {
         </TableCell>
       )}
       <TableCell style={{ width: '60px' }}>
+        <Stack alignItems="center" direction="column" spacing={0.5}>
+          <KnowledgeBaseSwitch
+            canEdit={material.permissions.canEdit}
+            currFolderId={currFolderId}
+            isConcrete={isConcrete}
+            itemId={material.id}
+            itemName={material.name}
+            state={material.workflowState}
+            type="material"
+          />
+        </Stack>
+      </TableCell>
+      <TableCell style={{ width: '60px' }}>
         <WorkbinTableButtons
           canDelete={material.permissions.canDelete}
           canEdit={material.permissions.canEdit}
@@ -98,6 +112,7 @@ const TableMaterialRow: FC<Props> = (props) => {
               }`,
             },
           }}
+          state={material.workflowState}
           type="material"
         />
       </TableCell>
