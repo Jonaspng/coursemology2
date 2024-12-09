@@ -21,6 +21,8 @@ import {
   SAVE_MATERIAL_LIST,
   SaveFolderAction,
   SaveMaterialListAction,
+  UPDATE_MATERIAL_WORKFLOW_STATE_LIST,
+  UpdateMaterialWorkflowStateAction,
 } from './types';
 
 const initialState: FoldersState = {
@@ -42,6 +44,7 @@ const initialState: FoldersState = {
     canCreateSubfolder: false,
     canUpload: false,
     canEdit: false,
+    canManageKnowledgeBase: false,
   },
 };
 
@@ -81,6 +84,16 @@ const reducer = produce((draft: FoldersState, action: FoldersActionType) => {
       const materialId = action.materialList.id;
       if (draft.materials.byId[materialId]) {
         saveListToStore(draft.materials, [action.materialList]);
+      }
+      break;
+    }
+
+    case UPDATE_MATERIAL_WORKFLOW_STATE_LIST: {
+      const materialId = action.materialId;
+      const material = draft.materials.byId[materialId];
+      if (material) {
+        material.workflowState = action.state;
+        saveListToStore(draft.materials, [material]);
       }
       break;
     }
@@ -134,6 +147,12 @@ export const actions = {
     materialList: MaterialListData,
   ): SaveMaterialListAction => {
     return { type: SAVE_MATERIAL_LIST, materialList };
+  },
+  updateMaterialWorkflowStateList: (
+    materialId: number,
+    state: 'not_chunked' | 'chunking' | 'chunked',
+  ): UpdateMaterialWorkflowStateAction => {
+    return { type: UPDATE_MATERIAL_WORKFLOW_STATE_LIST, materialId, state };
   },
 };
 
