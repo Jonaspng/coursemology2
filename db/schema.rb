@@ -10,10 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_12_16_104132) do
+ActiveRecord::Schema[7.2].define(version: 2025_01_06_073859) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "uuid-ossp"
+  enable_extension "vector"
 
   create_table "activities", id: :serial, force: :cascade do |t|
     t.integer "actor_id", null: false
@@ -865,6 +866,36 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_16_104132) do
     t.index ["updater_id"], name: "fk__course_material_folders_updater_id"
   end
 
+  create_table "course_material_text_chunk_references", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.bigint "material_id", null: false
+    t.bigint "text_chunk_id", null: false
+    t.bigint "creator_id", null: false
+    t.bigint "updater_id", null: false
+    t.index ["creator_id"], name: "fk__course_material_text_chunk_references_creator_id"
+    t.index ["material_id"], name: "fk__course_material_text_chunk_references_material_id"
+    t.index ["text_chunk_id"], name: "fk__course_material_text_chunk_references_text_chunk_id"
+    t.index ["updater_id"], name: "fk__course_material_text_chunk_references_updater_id"
+  end
+
+  create_table "course_material_text_chunkings", id: :serial, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "material_id", null: false
+    t.uuid "job_id"
+    t.index ["job_id"], name: "fk__course_material_text_chunkings_job_id", unique: true
+    t.index ["material_id"], name: "fk__course_material_text_chunkings_material_id", unique: true
+  end
+
+  create_table "course_material_text_chunks", id: :serial, force: :cascade do |t|
+    t.text "content", null: false
+    t.vector "embedding", limit: 1536, null: false
+    t.string "name", limit: 255, null: false
+    t.index ["embedding"], name: "index_course_material_text_chunk_embedding", opclass: :vector_cosine_ops, using: :hnsw
+    t.index ["name"], name: "index_course_material_text_chunks_on_name"
+  end
+
   create_table "course_materials", id: :serial, force: :cascade do |t|
     t.integer "folder_id", null: false
     t.string "name", limit: 255, null: false
@@ -873,6 +904,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_16_104132) do
     t.integer "updater_id", null: false
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "workflow_state", limit: 255, default: "not_chunked", null: false
     t.index "folder_id, lower((name)::text)", name: "index_course_materials_on_folder_id_and_name", unique: true
     t.index ["creator_id"], name: "fk__course_materials_creator_id"
     t.index ["folder_id"], name: "fk__course_materials_folder_id"
@@ -941,7 +973,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_16_104132) do
   create_table "course_question_assessments", id: :serial, force: :cascade do |t|
     t.integer "question_id", null: false
     t.integer "assessment_id", null: false
-    t.integer "weight", null: false
+    t.integer "weight"
     t.index ["assessment_id"], name: "index_course_question_assessments_on_assessment_id"
     t.index ["question_id", "assessment_id"], name: "index_question_assessments_on_question_id_and_assessment_id", unique: true
     t.index ["question_id"], name: "index_course_question_assessments_on_question_id"
@@ -1611,6 +1643,12 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_16_104132) do
   add_foreign_key "course_material_folders", "courses", name: "fk_course_material_folders_course_id"
   add_foreign_key "course_material_folders", "users", column: "creator_id", name: "fk_course_material_folders_creator_id"
   add_foreign_key "course_material_folders", "users", column: "updater_id", name: "fk_course_material_folders_updater_id"
+  add_foreign_key "course_material_text_chunk_references", "course_material_text_chunks", column: "text_chunk_id", name: "fk_course_material_text_chunk_references_text_chunk_id"
+  add_foreign_key "course_material_text_chunk_references", "course_materials", column: "material_id", name: "fk_course_material_text_chunk_references_material_id"
+  add_foreign_key "course_material_text_chunk_references", "users", column: "creator_id", name: "fk_course_material_text_chunk_references_creator_id"
+  add_foreign_key "course_material_text_chunk_references", "users", column: "updater_id", name: "fk_course_material_text_chunk_references_updater_id"
+  add_foreign_key "course_material_text_chunkings", "course_materials", column: "material_id", name: "fk_course_material_text_chunkings_material_id"
+  add_foreign_key "course_material_text_chunkings", "jobs", name: "fk_course_material_text_chunkings_job_id", on_delete: :nullify
   add_foreign_key "course_materials", "course_material_folders", column: "folder_id", name: "fk_course_materials_folder_id"
   add_foreign_key "course_materials", "users", column: "creator_id", name: "fk_course_materials_creator_id"
   add_foreign_key "course_materials", "users", column: "updater_id", name: "fk_course_materials_updater_id"
