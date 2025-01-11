@@ -27,7 +27,7 @@ executors:
           DATABASE_URL: 'postgres://ubuntu@localhost:5432/coursemology_test'
           COLLECT_COVERAGE: << parameters.collects_rails_coverage >>
 
-      - image: cimg/postgres:16.1
+      - image: pgvector/pgvector:pg16
         environment:
           POSTGRES_USER: ubuntu
           POSTGRES_DB: coursemology_test
