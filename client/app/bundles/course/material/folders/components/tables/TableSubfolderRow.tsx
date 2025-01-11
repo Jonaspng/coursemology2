@@ -122,13 +122,13 @@ const TableSubfolderRow: FC<Props> = (props) => {
           </Stack>
         </TableCell>
       )}
-      {canManageKnowledgeBase && (
+      {/* {canManageKnowledgeBase && (
         <TableCell style={{ width: '60px' }}>
           <Stack alignItems="center" direction="column" spacing={0.5}>
             -
           </Stack>
         </TableCell>
-      )}
+      )} */}
       <TableCell
         style={{
           width: '60px',

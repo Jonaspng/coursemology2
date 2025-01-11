@@ -149,9 +149,9 @@ const WorkbinTable: FC<Props> = (props) => {
           {!isCurrentCourseStudent && (
             <TableCell>{columnHeaderWithSort('Start At')}</TableCell>
           )}
-          {canManageKnowledgeBase && (
+          {/* {canManageKnowledgeBase && (
             <TableCell>{columnHeaderWithoutSort('Knowledge Base')}</TableCell>
-          )}
+          )} */}
         </TableRow>
       </TableHead>
       <TableBody>

@@ -88,7 +88,7 @@ const TableMaterialRow: FC<Props> = (props) => {
           -
         </TableCell>
       )}
-      {canManageKnowledgeBase && (
+      {/* {canManageKnowledgeBase && (
         <TableCell style={{ width: '60px' }}>
           <Stack alignItems="center" direction="column" spacing={0.5}>
             <KnowledgeBaseSwitch
@@ -102,7 +102,7 @@ const TableMaterialRow: FC<Props> = (props) => {
             />
           </Stack>
         </TableCell>
-      )}
+      )} */}
       <TableCell style={{ width: '60px' }}>
         <WorkbinTableButtons
           canDelete={material.permissions.canDelete}
