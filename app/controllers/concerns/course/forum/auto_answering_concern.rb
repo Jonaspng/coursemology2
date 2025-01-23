@@ -2,8 +2,12 @@
 module Course::Forum::AutoAnsweringConcern
   extend ActiveSupport::Concern
 
-  def auto_answer_action
+  def auto_answer_action(is_new_reply)
     return unless current_course.component_enabled?(Course::RagWiseComponent)
+
+    settings = rag_settings
+    # ensures that when manually generating new reply it will always draft
+    settings[:response_workflow] = '0' if is_new_reply
 
     system ||= User.find(User::SYSTEM_USER_ID)
     raise 'No system user. Did you run rake db:seed?' unless system
