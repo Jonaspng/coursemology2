@@ -7,6 +7,7 @@ module Course::ForumsAbilityComponent
       define_all_forum_permissions
       define_staff_forum_permissions if course_user.staff?
       define_teaching_staff_forum_permissions if course_user.teaching_staff?
+      allow_manage_ai_responses if course_user.manager_or_owner?
     end
 
     super
@@ -60,6 +61,7 @@ module Course::ForumsAbilityComponent
   def define_staff_forum_permissions
     allow_staff_show_all_topics
     allow_staff_resolve_topics
+    disallow_teaching_staff_manage_ai_responses
   end
 
   def allow_staff_show_all_topics
@@ -74,6 +76,7 @@ module Course::ForumsAbilityComponent
   def define_teaching_staff_forum_permissions
     allow_teaching_staff_manage_forums
     allow_teaching_staff_manage_topics
+    disallow_teaching_staff_manage_ai_responses
   end
 
   def allow_teaching_staff_manage_forums
@@ -82,5 +85,17 @@ module Course::ForumsAbilityComponent
 
   def allow_teaching_staff_manage_topics
     can :manage, Course::Forum::Topic, topic_course_hash
+  end
+
+  def disallow_teaching_staff_manage_ai_responses
+    cannot :publish, Course::Forum::Topic, topic_course_hash
+    cannot :generate_reply, Course::Forum::Topic, topic_course_hash
+    cannot :mark_answer_and_publish, Course::Forum::Topic, topic_course_hash
+  end
+
+  def allow_manage_ai_responses
+    can :publish, Course::Forum::Topic, topic_course_hash
+    can :generate_reply, Course::Forum::Topic, topic_course_hash
+    can :mark_answer_and_publish, Course::Forum::Topic, topic_course_hash
   end
 end
