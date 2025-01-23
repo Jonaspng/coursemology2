@@ -2,7 +2,9 @@ import { RecursiveArray } from 'types';
 import {
   ForumTopicPostListData,
   ForumTopicPostPostData,
+  PostWorkflowState,
 } from 'types/course/forums';
+import { JobSubmitted } from 'types/jobs';
 
 import { APIResponse } from 'api/types';
 
@@ -62,11 +64,39 @@ export default class PostsAPI extends BaseCourseAPI {
   }
 
   /**
+   * Mark AI generated drafted post as answer and publish
+   */
+  markAnswerAndPublish(urlSlug: string): APIResponse<{
+    workflowState: PostWorkflowState;
+    isTopicResolved: boolean;
+    creator: { id: number; userUrl: string; name: string; imageUrl: string };
+  }> {
+    return this.client.put(`${urlSlug}/mark_answer_and_publish`);
+  }
+
+  /**
    * Upvote/downvote an existing post.
    */
   vote(urlSlug: string, vote: -1 | 0 | 1): APIResponse<ForumTopicPostListData> {
     return this.client.put(`${urlSlug}/vote`, {
       vote,
     });
+  }
+
+  /**
+   * Publish a drafted post
+   */
+  publish(urlSlug: string): APIResponse<{
+    workflowState: PostWorkflowState;
+    creator: { id: number; userUrl: string; name: string; imageUrl: string };
+  }> {
+    return this.client.put(`${urlSlug}/publish`);
+  }
+
+  /**
+   * Toggle Between Publish and Draft workflow state for a rag auto generated post.
+   */
+  generateReply(urlSlug: string): APIResponse<JobSubmitted> {
+    return this.client.put(`${urlSlug}/generate_reply`);
   }
 }

@@ -33,6 +33,7 @@ export type ForumTopicListDataPermissions = Permissions<
   | 'canReplyTopic'
   | 'canToggleAnswer'
   | 'isAnonymousEnabled'
+  | 'canManageAIResponse'
 >;
 
 export type ForumTopicPostListDataPermissions = Permissions<
@@ -42,6 +43,8 @@ export type ForumTopicPostListDataPermissions = Permissions<
   | 'canViewAnonymous'
   | 'isAnonymousEnabled'
 >;
+
+export type PostWorkflowState = 'draft' | 'published' | 'delayed' | 'answering';
 
 export enum TopicType {
   NORMAL = 'normal',
@@ -110,6 +113,8 @@ export interface ForumTopicPostListData {
   voteTally: number;
   isAnonymous: boolean;
   creator?: { id: number; userUrl: string; name: string; imageUrl: string };
+  isAiGenerated: boolean;
+  workflowState: PostWorkflowState;
   permissions: ForumTopicPostListDataPermissions;
 }
 
@@ -186,6 +191,8 @@ export interface ForumTopicPostEntity {
   voteTally: ForumTopicPostListData['voteTally'];
   isAnonymous: ForumTopicPostListData['isAnonymous'];
   creator?: ForumTopicPostListData['creator'];
+  isAiGenerated: ForumTopicPostListData['isAiGenerated'];
+  workflowState: ForumTopicPostListData['workflowState'];
 
   permissions: ForumTopicPostListData['permissions'];
 }

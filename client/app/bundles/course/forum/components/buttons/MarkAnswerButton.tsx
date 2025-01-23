@@ -45,6 +45,8 @@ const MarkAnswerButton = (props: Props): JSX.Element | null => {
 
   if (topic.topicType !== TopicType.QUESTION) return null;
 
+  if (post.isAiGenerated && post.workflowState === 'draft') return null;
+
   if (!topic.permissions.canToggleAnswer) {
     return isAnswer ? (
       <Chip

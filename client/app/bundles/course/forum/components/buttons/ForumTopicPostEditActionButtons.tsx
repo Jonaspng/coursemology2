@@ -1,7 +1,7 @@
 import { Dispatch, FC, SetStateAction, useState } from 'react';
 import { defineMessages } from 'react-intl';
 import { Button } from '@mui/material';
-import { ForumTopicPostEntity } from 'types/course/forums';
+import { ForumTopicEntity, ForumTopicPostEntity } from 'types/course/forums';
 
 import Prompt, { PromptText } from 'lib/components/core/dialogs/Prompt';
 import { useAppDispatch } from 'lib/hooks/store';
@@ -11,8 +11,11 @@ import formTranslations from 'lib/translations/form';
 
 import { updateForumTopicPost } from '../../operations';
 
+import MarkAnswerAndPublishButton from './MarkAnswerAndPublishButton';
+
 interface Props {
   post: ForumTopicPostEntity;
+  topic: ForumTopicEntity;
   editValue: string;
   setIsEditing: Dispatch<SetStateAction<boolean>>;
 }
@@ -46,7 +49,7 @@ const translations = defineMessages({
 });
 
 const ForumTopicPostEditActionButtons: FC<Props> = (props) => {
-  const { post, editValue, setIsEditing } = props;
+  const { post, topic, editValue, setIsEditing } = props;
   const [discardEditPrompt, setDiscardEditPrompt] = useState(false);
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
@@ -92,15 +95,23 @@ const ForumTopicPostEditActionButtons: FC<Props> = (props) => {
         {t(formTranslations.cancel)}
       </Button>
 
-      <Button
-        className="save-button"
-        color="primary"
-        disabled={editValue === post.text}
-        id={`post_${post.id}`}
-        onClick={handleSaveUpdate}
-      >
-        {t(formTranslations.save)}
-      </Button>
+      {post.isAiGenerated && post.workflowState === 'draft' ? (
+        <MarkAnswerAndPublishButton
+          post={post}
+          save={handleSaveUpdate}
+          topic={topic}
+        />
+      ) : (
+        <Button
+          className="save-button"
+          color="primary"
+          disabled={editValue === post.text}
+          id={`post_${post.id}`}
+          onClick={handleSaveUpdate}
+        >
+          {t(formTranslations.save)}
+        </Button>
+      )}
 
       <Prompt
         onClickPrimary={(): void => {

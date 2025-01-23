@@ -15,6 +15,7 @@ import {
   ForumTopicListData,
   ForumTopicPostEntity,
   ForumTopicPostListData,
+  PostWorkflowState,
 } from 'types/course/forums';
 
 import { ForumsState } from './types';
@@ -227,6 +228,13 @@ export const forumSlice = createSlice({
         topicId: number;
         postId: number;
         isTopicResolved: boolean;
+        workflowState?: PostWorkflowState;
+        creator?: {
+          id: number;
+          userUrl: string;
+          name: string;
+          imageUrl: string;
+        };
       }>,
     ) => {
       const topic = state.topics.entities[action.payload.topicId];
@@ -237,6 +245,28 @@ export const forumSlice = createSlice({
       }
       if (post) {
         post.isAnswer = !post.isAnswer;
+        post.workflowState = action.payload.workflowState ?? post.workflowState;
+        post.creator = action.payload.creator ?? post.creator;
+        forumTopicPostAdapter.upsertOne(state.posts, post);
+      }
+    },
+    updatePostWorkflowState: (
+      state,
+      action: PayloadAction<{
+        postId: number;
+        workflowState: PostWorkflowState;
+        creator: {
+          id: number;
+          userUrl: string;
+          name: string;
+          imageUrl: string;
+        };
+      }>,
+    ) => {
+      const post = state.posts.entities[action.payload.postId];
+      if (post) {
+        post.workflowState = action.payload.workflowState;
+        post.creator = action.payload.creator;
         forumTopicPostAdapter.upsertOne(state.posts, post);
       }
     },
@@ -265,6 +295,7 @@ export const {
   updateForumTopicPostListData,
   removeForumTopicPost,
   updatePostAsAnswer,
+  updatePostWorkflowState,
 } = forumSlice.actions;
 
 export default forumSlice.reducer;
