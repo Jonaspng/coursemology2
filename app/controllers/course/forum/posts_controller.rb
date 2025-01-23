@@ -6,17 +6,10 @@ class Course::Forum::PostsController < Course::Forum::ComponentController
   before_action :authorize_locked_topic, only: [:create]
 
   include Course::Discussion::PostsConcern
+  include Course::Forum::AutoAnsweringConcern
 
   def create
-    result = @post.class.transaction do
-      raise ActiveRecord::Rollback unless @post.save && create_topic_subscription && update_topic_pending_status
-      raise ActiveRecord::Rollback unless @topic.update_column(:latest_post_at, @post.created_at)
-
-      true
-    end
-
-    if result
-      send_created_notification(@post)
+    if @post.create_post(@topic, current_user, current_course_user)
       render 'create'
     else
       render json: { errors: @post.errors.full_messages.to_sentence }, status: :bad_request
@@ -46,6 +39,17 @@ class Course::Forum::PostsController < Course::Forum::ComponentController
     end
   end
 
+  # Mark AI generated drafted post as answer and publish it
+  # Seperate function from above as it would easier to define 2 seperate permission in forum ability
+  def mark_answer_and_publish
+    authorize!(:mark_answer_and_publish, @topic)
+    if @post.mark_answer_and_publish(@topic, current_user, current_course_user)
+      render partial: 'post_publish_data', locals: { forum: @forum, topic: @topic, post: @post }
+    else
+      render json: { errors: @post.errors.full_messages.to_sentence }, status: :bad_request
+    end
+  end
+
   def destroy
     if @topic.posts.count == 1 && @topic.destroy
       render json: { isTopicDeleted: true }
@@ -60,22 +64,30 @@ class Course::Forum::PostsController < Course::Forum::ComponentController
     end
   end
 
-  protected
-
-  def create_topic_subscription
-    if @forum.forum_topics_auto_subscribe
-      @topic.ensure_subscribed_by(current_user)
+  def publish
+    authorize!(:publish, @topic)
+    if publish_post_action
+      render partial: 'post_publish_data', locals: { forum: @forum, topic: @topic, post: @post }
     else
-      true
+      render json: { errors: @post.errors.full_messages.to_sentence }, status: :bad_request
     end
   end
 
-  def discussion_topic
-    @topic.acting_as
+  def generate_reply
+    authorize!(:generate_reply, @topic)
+    job = last_rag_auto_answering_job
+    if job
+      render partial: 'jobs/submitted', locals: { job: job }
+    else
+      job = auto_answer_action(true)
+      render partial: 'jobs/submitted', locals: { job: job.job }
+    end
   end
 
-  def skip_update_topic_status
-    true
+  protected
+
+  def discussion_topic
+    @topic.acting_as
   end
 
   private
@@ -92,13 +104,18 @@ class Course::Forum::PostsController < Course::Forum::ComponentController
     params.permit(:vote)[:vote].to_i
   end
 
-  def send_created_notification(post)
-    return unless current_user
-
-    Course::Forum::PostNotifier.post_replied(current_user, current_course_user, post)
-  end
-
   def authorize_locked_topic
     authorize!(:reply, @topic)
+  end
+
+  def creator_json
+    creator = @post.creator
+    user = @course_users_hash&.fetch(creator.id, creator) || creator
+    {
+      id: user.id,
+      userUrl: url_to_user_or_course_user(current_course, user),
+      name: display_user(user),
+      imageUrl: user_image(creator)
+    }
   end
 end

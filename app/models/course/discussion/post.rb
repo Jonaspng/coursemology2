@@ -11,8 +11,12 @@ class Course::Discussion::Post < ApplicationRecord
       event :publish, transitions_to: :published
     end
     state :delayed
+    state :answering do
+      event :answered, transitions_to: :published
+    end
     state :published do
       event :unpublish, transitions_to: :draft
+      event :answer, transitions_to: :answering
     end
   end
 
@@ -36,10 +40,15 @@ class Course::Discussion::Post < ApplicationRecord
   validates :topic, presence: true
   validates :workflow_state, length: { maximum: 255 }, presence: true
   validates :is_anonymous, inclusion: { in: [true, false] }
+  validates :is_ai_generated, inclusion: { in: [true, false] }
+  validates :faithfulness_score, presence: true
+  validates :answer_relevance_score, presence: true
 
   belongs_to :topic, inverse_of: :posts, touch: true
   has_many :votes, inverse_of: :post, dependent: :destroy
   has_one :codaveri_feedback, inverse_of: :post, dependent: :destroy
+  has_one :rag_auto_answering, class_name: 'Course::Forum::RagAutoAnswering',
+                               inverse_of: :post, dependent: :destroy
 
   accepts_nested_attributes_for :codaveri_feedback
 
@@ -65,6 +74,18 @@ class Course::Discussion::Post < ApplicationRecord
                                                             associations: :votes,
                                                             scope: votes)
       preloader.call
+    end
+  end)
+
+  # @!method self.include_drafts_for_teaching_staff(current_user)
+  #   Includes draft posts if the user is the teaching staff.
+  #
+  #   @param [User] current_user The user to determine access for.
+  scope :include_drafts_for_teaching_staff, (lambda do |current_course_user, current_course|
+    if current_course_user&.teaching_staff? && current_course.component_enabled?(Course::RagWiseComponent)
+      all
+    else
+      where.not(workflow_state: 'draft')
     end
   end)
 
@@ -127,12 +148,54 @@ class Course::Discussion::Post < ApplicationRecord
     true
   end
 
+  # Mark drafted AI generated post as the correct answer and publish it.
+  def mark_answer_and_publish(topic, current_user, current_course_user)
+    self.class.transaction do
+      toggle_answer
+      raise ActiveRecord::Rollback unless publish_post(topic, current_user,
+                                                       current_course_user)
+    end
+
+    true
+  end
+
   # Use the CourseUser name if available, else fallback to the User name.
   #
   # @return [String] The CourseUser/User name of the post author.
   def author_name
     course_user = topic.course.course_users.for_user(creator).first
     course_user&.name || creator.name
+  end
+
+  def rag_auto_answer!(topic, current_author, current_course_author, settings)
+    ensure_rag_auto_answering!
+    Course::Forum::AutoAnsweringJob.perform_later(self, topic, current_author,
+                                                  current_course_author, settings).tap do |job|
+      rag_auto_answering.update_column(:job_id, job.job_id)
+    end
+  end
+
+  # publish post in draft state
+  def publish_post(topic, current_user, current_course_user)
+    publish!
+    create_post(topic, current_user, current_course_user)
+  end
+
+  def create_post(topic, current_author, current_course_author)
+    # In case of conditional publish, when non course-creator publish AI responses
+    # The post creator will become the person who pressed the publish button
+    self.creator = current_author
+    self.updater = current_author
+
+    result = self.class.transaction do
+      raise ActiveRecord::Rollback unless save && create_topic_subscription(topic, current_author)
+      raise ActiveRecord::Rollback unless topic.update_column(:latest_post_at, created_at)
+
+      true
+    end
+
+    send_created_notification(current_author, current_course_author) if result
+    result
   end
 
   private
@@ -171,5 +234,30 @@ class Course::Discussion::Post < ApplicationRecord
 
   def sanitize_text
     self.text = ApplicationController.helpers.sanitize_ckeditor_rich_text(text)
+  end
+
+  def ensure_rag_auto_answering!
+    ActiveRecord::Base.transaction(requires_new: true) do
+      rag_auto_answering || create_rag_auto_answering!
+    end
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
+    raise e if e.is_a?(ActiveRecord::RecordInvalid) && e.record.errors[:post_id].empty?
+
+    association(:rag_auto_answering).reload
+    rag_auto_answering
+  end
+
+  def create_topic_subscription(topic, current_user)
+    if topic.forum.forum_topics_auto_subscribe
+      topic.ensure_subscribed_by(current_user)
+    else
+      true
+    end
+  end
+
+  def send_created_notification(current_author, current_course_author)
+    return unless current_author
+
+    Course::Forum::PostNotifier.post_replied(current_author, current_course_author, self)
   end
 end
