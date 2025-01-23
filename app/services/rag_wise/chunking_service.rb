@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-class Rag::ChunkingService
+class RagWise::ChunkingService
   def initialize(text: nil, file: nil)
     raise ArgumentError, 'Either text or file must be provided' if text.nil? && file.nil?
 

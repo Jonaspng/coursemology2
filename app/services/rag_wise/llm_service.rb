@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-class Rag::LlmService
-  def initialize(_evaluation_service = nil)
+class RagWise::LlmService
+  def initialize
     @client = LANGCHAIN_OPENAI
   end
 
