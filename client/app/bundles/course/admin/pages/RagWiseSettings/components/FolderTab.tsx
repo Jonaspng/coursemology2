@@ -8,7 +8,7 @@ import { getCourseId } from 'lib/helpers/url-helpers';
 import { useAppSelector } from 'lib/hooks/store';
 
 import {
-  getExpandedSettings,
+  getFolderExpandedSettings,
   getMaterialByFolderId,
   getSubfolder,
 } from '../selectors';
@@ -26,7 +26,7 @@ const FolderTab: FC<FolderTabProps> = (props) => {
   const materials = useAppSelector((state) =>
     getMaterialByFolderId(state, folder.id),
   );
-  const isFolderExpanded = useAppSelector(getExpandedSettings);
+  const isFolderExpanded = useAppSelector(getFolderExpandedSettings);
   const subfolders = useAppSelector((state) => getSubfolder(state, folder.id));
 
   return (

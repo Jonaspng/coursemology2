@@ -1,4 +1,8 @@
-import { FolderData, MaterialListData } from 'types/course/material/folders';
+import {
+  FolderData,
+  MaterialIdsData,
+  MaterialListData,
+} from 'types/course/material/folders';
 import { JobSubmitted } from 'types/jobs';
 
 import { APIResponse } from 'api/types';
@@ -60,6 +64,13 @@ export default class FoldersAPI extends BaseCourseAPI {
   ): APIResponse<JobSubmitted> {
     return this.client.put(
       `${this.#urlPrefix}/${currFolderId}/files/${materialId}/create_text_chunks`,
+    );
+  }
+
+  chunkMaterialNew(params: MaterialIdsData): APIResponse<JobSubmitted> {
+    return this.client.put(
+      `/courses/${this.courseId}/materials/create_text_chunks`,
+      params,
     );
   }
 
